@@ -19,6 +19,9 @@ type RacesRepo interface {
 
 	// List will return a list of races.
 	List(filter *racing.ListRacesRequestFilter, orderBy string) ([]*racing.Race, error)
+
+	// Get will return a single race by ID.
+	Get(id int64) (*racing.Race, error)
 }
 
 type racesRepo struct {
@@ -72,9 +75,13 @@ var allowedOrderByFields = map[string]bool{
 }
 
 // applyOrder adds ORDER BY to the query, falling back to advertised_start_time if not specified.
+// datetime() is used for advertised_start_time to ensure correct ordering regardless of timezone format.
 func (r *racesRepo) applyOrder(query, orderBy string) string {
 	if orderBy == "" || !allowedOrderByFields[orderBy] {
-		return query + " ORDER BY advertised_start_time ASC"
+		return query + " ORDER BY datetime(advertised_start_time) ASC"
+	}
+	if orderBy == "advertised_start_time" {
+		return query + " ORDER BY datetime(advertised_start_time) ASC"
 	}
 	return query + " ORDER BY " + orderBy + " ASC"
 }
@@ -108,6 +115,26 @@ func (r *racesRepo) applyFilter(query string, filter *racing.ListRacesRequestFil
 	}
 
 	return query, args
+}
+
+func (r *racesRepo) Get(id int64) (*racing.Race, error) {
+	query := getRaceQueries()[racesList] + " WHERE id = ?"
+
+	rows, err := r.db.Query(query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	races, err := r.scanRaces(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(races) == 0 {
+		return nil, nil
+	}
+
+	return races[0], nil
 }
 
 func (m *racesRepo) scanRaces(
