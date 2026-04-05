@@ -145,6 +145,36 @@ func TestListRaces_Status_ClosedWhenInPast(t *testing.T) {
 	}
 }
 
+func TestGetRace_Found(t *testing.T) {
+	repo := newTestRepo(t)
+
+	race, err := repo.Get(1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if race == nil {
+		t.Fatal("expected race to be returned, got nil")
+	}
+
+	if race.Id != 1 {
+		t.Errorf("expected race id 1, got %d", race.Id)
+	}
+}
+
+func TestGetRace_NotFound(t *testing.T) {
+	repo := newTestRepo(t)
+
+	race, err := repo.Get(9999)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if race != nil {
+		t.Errorf("expected nil for missing race, got %+v", race)
+	}
+}
+
 func TestListRaces_FilterByMeetingID(t *testing.T) {
 	repo := newTestRepo(t)
 
