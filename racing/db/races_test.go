@@ -30,7 +30,7 @@ func newTestRepo(t *testing.T) RacesRepo {
 func TestListRaces_NoFilter(t *testing.T) {
 	repo := newTestRepo(t)
 
-	races, err := repo.List(nil)
+	races, err := repo.List(nil, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestListRaces_OnlyVisible_True(t *testing.T) {
 
 	races, err := repo.List(&racing.ListRacesRequestFilter{
 		OnlyVisible: proto.Bool(true),
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -60,14 +60,14 @@ func TestListRaces_OnlyVisible_True(t *testing.T) {
 func TestListRaces_OnlyVisible_False_ReturnsAll(t *testing.T) {
 	repo := newTestRepo(t)
 
-	allRaces, err := repo.List(nil)
+	allRaces, err := repo.List(nil, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
 	filteredRaces, err := repo.List(&racing.ListRacesRequestFilter{
 		OnlyVisible: proto.Bool(false),
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -78,13 +78,60 @@ func TestListRaces_OnlyVisible_False_ReturnsAll(t *testing.T) {
 	}
 }
 
+func TestListRaces_DefaultOrder_ByAdvertisedStartTime(t *testing.T) {
+	repo := newTestRepo(t)
+
+	races, err := repo.List(nil, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// checks each race starts no earlier than the previous one
+	for i := 1; i < len(races); i++ {
+		prev := races[i-1].AdvertisedStartTime.AsTime()
+		curr := races[i].AdvertisedStartTime.AsTime()
+		if curr.Before(prev) {
+			t.Errorf("races not sorted by advertised_start_time: race %d (%v) comes before race %d (%v)", i, curr, i-1, prev)
+		}
+	}
+}
+
+func TestListRaces_OrderBy_Name(t *testing.T) {
+	repo := newTestRepo(t)
+
+	races, err := repo.List(nil, "name")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for i := 1; i < len(races); i++ {
+		if races[i].Name < races[i-1].Name {
+			t.Errorf("races not sorted by name: %q comes before %q", races[i].Name, races[i-1].Name)
+		}
+	}
+}
+
+func TestListRaces_OrderBy_Invalid_FallsBackToDefault(t *testing.T) {
+	repo := newTestRepo(t)
+
+	// invalid field should not error, just fall back to default ordering
+	races, err := repo.List(nil, "not_a_real_field")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(races) == 0 {
+		t.Error("expected races to be returned")
+	}
+}
+
 func TestListRaces_FilterByMeetingID(t *testing.T) {
 	repo := newTestRepo(t)
 
 	meetingID := int64(1)
 	races, err := repo.List(&racing.ListRacesRequestFilter{
 		MeetingIds: []int64{meetingID},
-	})
+	}, "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
