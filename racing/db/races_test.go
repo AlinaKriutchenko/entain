@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"testing"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -122,6 +123,25 @@ func TestListRaces_OrderBy_Invalid_FallsBackToDefault(t *testing.T) {
 
 	if len(races) == 0 {
 		t.Error("expected races to be returned")
+	}
+}
+
+func TestListRaces_Status_ClosedWhenInPast(t *testing.T) {
+	repo := newTestRepo(t)
+
+	races, err := repo.List(nil, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	for _, r := range races {
+		startTime := r.AdvertisedStartTime.AsTime()
+		if startTime.Before(time.Now()) && r.Status != racing.RaceStatus_RACE_STATUS_CLOSED {
+			t.Errorf("race %d has past start time but status is not CLOSED", r.Id)
+		}
+		if !startTime.Before(time.Now()) && r.Status != racing.RaceStatus_RACE_STATUS_OPEN {
+			t.Errorf("race %d has future start time but status is not OPEN", r.Id)
+		}
 	}
 }
 
