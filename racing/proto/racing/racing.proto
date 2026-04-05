@@ -14,6 +14,8 @@ service Racing {
 
 message ListRacesRequest {
   ListRacesRequestFilter filter = 1;
+  // order_by field to sort by (advertised_start_time, id, name, number). Defaults to advertised_start_time ASC.
+  string order_by = 2;
 }
 
 // Response to ListRaces call.
