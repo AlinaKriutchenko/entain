@@ -12,7 +12,7 @@ import (
 	"git.neds.sh/matty/entain/sports/proto/sports"
 )
 
-// EventsRepo provides repository access to sport events.
+// EventsRepo is the interface for querying sport events.
 type EventsRepo interface {
 	// Init will initialise our events repository.
 	Init() error
@@ -26,12 +26,12 @@ type eventsRepo struct {
 	init sync.Once
 }
 
-// NewEventsRepo creates a new events repository.
+// NewEventsRepo sets up the events database.
 func NewEventsRepo(db *sql.DB) EventsRepo {
 	return &eventsRepo{db: db}
 }
 
-// Init prepares the events repository with dummy data.
+// Init seeds the database with dummy events.
 func (r *eventsRepo) Init() error {
 	var err error
 
@@ -62,7 +62,7 @@ func (r *eventsRepo) List(filter *sports.ListEventsRequestFilter, orderBy string
 	return r.scanEvents(rows)
 }
 
-// allowedOrderByFields limits sorting to known columns to prevent SQL injection.
+// allowedOrderByFields whitelists columns that can be sorted to keep queries safe.
 var allowedOrderByFields = map[string]bool{
 	"advertised_start_time": true,
 	"id":                    true,

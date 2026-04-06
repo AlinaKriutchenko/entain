@@ -12,7 +12,7 @@ type sportsService struct {
 	eventsRepo db.EventsRepo
 }
 
-// NewSportsService instantiates and returns a new sportsService.
+// NewSportsService sets up and returns a new sports service.
 func NewSportsService(eventsRepo db.EventsRepo) sports.SportsServer {
 	return &sportsService{eventsRepo: eventsRepo}
 }
