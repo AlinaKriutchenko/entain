@@ -7,7 +7,8 @@ Please treat the services provided as if they would live in a real-world environ
 ### Directory Structure
 
 - `api`: A basic REST gateway, forwarding requests onto service(s).
-- `racing`: A very bare-bones racing service.
+- `racing`: Racing service, exposes race data via gRPC on port 9000.
+- `sports`: Sports service, exposes sport event data via gRPC on port 9001.
 
 ```
 entain/
@@ -15,6 +16,11 @@ entain/
 │  ├─ proto/
 │  ├─ main.go
 ├─ racing/
+│  ├─ db/
+│  ├─ proto/
+│  ├─ service/
+│  ├─ main.go
+├─ sports/
 │  ├─ db/
 │  ├─ proto/
 │  ├─ service/
@@ -46,26 +52,86 @@ brew install protobuf
 cd ./racing
 
 go build && ./racing
-➜ INFO[0000] gRPC server listening on: localhost:9000
+➜ gRPC server listening on: localhost:9000
 ```
 
-3. In another terminal window, start our api service...
+3. In another terminal window, start our sports service...
+
+```bash
+cd ./sports
+
+go build && ./sports
+➜ gRPC server listening on: localhost:9001
+```
+
+4. In another terminal window, start our api service...
 
 ```bash
 cd ./api
 
 go build && ./api
-➜ INFO[0000] API server listening on: localhost:8000
+➜ API server listening on: localhost:8000
 ```
 
-4. Make a request for races... 
+5. Make a request...
 
 ```bash
-curl -X "POST" "http://localhost:8000/v1/list-races" \
+curl -X POST http://localhost:8000/v1/list-races \
      -H 'Content-Type: application/json' \
-     -d $'{
-  "filter": {}
-}'
+     -d '{"filter": {}}'
+```
+
+### API
+
+**Racing**
+
+List all races:
+```bash
+curl -X POST http://localhost:8000/v1/list-races \
+     -H 'Content-Type: application/json' \
+     -d '{"filter": {}}'
+```
+
+List visible races only:
+```bash
+curl -X POST http://localhost:8000/v1/list-races \
+     -H 'Content-Type: application/json' \
+     -d '{"filter": {"only_visible": true}}'
+```
+
+Sort by a field (id, name, number, advertised_start_time):
+```bash
+curl -X POST http://localhost:8000/v1/list-races \
+     -H 'Content-Type: application/json' \
+     -d '{"filter": {}, "order_by": "name"}'
+```
+
+Get a single race by ID:
+```bash
+curl http://localhost:8000/v1/races/1
+```
+
+**Sports**
+
+List all events:
+```bash
+curl -X POST http://localhost:8000/v1/list-events \
+     -H 'Content-Type: application/json' \
+     -d '{"filter": {}}'
+```
+
+List visible events only:
+```bash
+curl -X POST http://localhost:8000/v1/list-events \
+     -H 'Content-Type: application/json' \
+     -d '{"filter": {"only_visible": true}}'
+```
+
+Sort by a field (id, name, advertised_start_time):
+```bash
+curl -X POST http://localhost:8000/v1/list-events \
+     -H 'Content-Type: application/json' \
+     -d '{"filter": {}, "order_by": "name"}'
 ```
 
 ### Changes/Updates Required
@@ -100,7 +166,7 @@ curl -X "POST" "http://localhost:8000/v1/list-races" \
 
 **Note:**
 
-To aid in proto generation following any changes, you can run `go generate ./...` from `api` and `racing` directories.
+To aid in proto generation following any changes, you can run `go generate ./...` from `api`, `racing` and `sports` directories.
 
 Before you do so, please ensure you have the following installed. You can simply run the following command below in each of `api` and `racing` directories.
 
