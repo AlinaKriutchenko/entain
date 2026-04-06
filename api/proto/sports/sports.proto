@@ -1,0 +1,56 @@
+syntax = "proto3";
+package sports;
+
+option go_package = "/sports";
+
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+
+service Sports {
+  // ListEvents returns a collection of all sports events.
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse) {
+    option (google.api.http) = { post: "/v1/list-events", body: "*" };
+  }
+}
+
+// Requests/Responses
+
+message ListEventsRequest {
+  ListEventsRequestFilter filter = 1;
+  // order_by field to sort by (advertised_start_time, id, name). Defaults to advertised_start_time ASC.
+  string order_by = 2;
+}
+
+message ListEventsResponse {
+  repeated SportEvent events = 1;
+}
+
+// Filter for listing events.
+message ListEventsRequestFilter {
+  // Only return visible events when true, all events otherwise.
+  optional bool only_visible = 1;
+}
+
+// Resources
+
+// EventStatus is OPEN if the event hasn't started yet, CLOSED if it's in the past.
+enum EventStatus {
+  EVENT_STATUS_UNSPECIFIED = 0;
+  EVENT_STATUS_OPEN = 1;
+  EVENT_STATUS_CLOSED = 2;
+}
+
+message SportEvent {
+  // ID is a unique identifier for the event.
+  int64 id = 1;
+  // Name is the official name of the event.
+  string name = 2;
+  // SportType is the type of sport (like football, tennis).
+  string sport_type = 3;
+  // Visible represents whether or not the event is visible.
+  bool visible = 4;
+  // AdvertisedStartTime is the time the event is scheduled to start.
+  google.protobuf.Timestamp advertised_start_time = 5;
+  // Status is based on advertised_start_time: OPEN if in the future, CLOSED if in the past.
+  EventStatus status = 6;
+}
